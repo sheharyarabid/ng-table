@@ -1,0 +1,47 @@
+// html {
+//     overflow: scroll;
+//     height: 100%;
+// }
+.tableSection {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+body {
+    overflow: auto;
+    max-width: 100% !important;
+    height: 100% !important;
+    align-items: center;
+    justify-content: center;
+    display: flex;
+}
+.container {
+    align-items: center;
+    justify-content: center;
+    display: flex;
+}
+.matInput {
+    width: 40px;
+}
+input, .selectID {
+    margin: 5px;
+    display: flex;
+    justify-content: center !important;
+}
+tr :hover {
+    background-color:rgba(240, 240, 240, 0.945);
+}
+app-button {
+    margin: 2px;
+}
+input {
+    margin: 2px;
+    width: 100%;
+}
+.row-btns {
+    display: flex;
+
+}
+app-button {
+ justify-self: center;
+}

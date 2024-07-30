@@ -1,0 +1,21 @@
+<h1 mat-dialog-title>Add New Employee</h1>
+<div mat-dialog-content>
+  <form [formGroup]="form">
+    <mat-form-field>
+      <mat-label>Name</mat-label>
+      <input matInput formControlName="name" title="Name" />
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>Designation</mat-label>
+      <input matInput formControlName="designation" title="Designation" />
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>City</mat-label>
+      <input matInput formControlName="city" title="City" />
+    </mat-form-field>
+  </form>
+</div>
+<div mat-dialog-actions>
+  <button mat-button (click)="onSubmit()">Add</button>
+  <button mat-button (click)="dialogRef.close()">Cancel</button>
+</div>

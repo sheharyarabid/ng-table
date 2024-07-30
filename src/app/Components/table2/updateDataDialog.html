@@ -1,0 +1,29 @@
+<div class="Dialog-Header">
+    <h3 mat-dialog-title class="mb-0 mt-2 d-flex justify-content-center">Update Employee</h3>
+    <div mat-dialog-content class="mb-0 d-flex justify-content-center">
+      Select the ID you wish to edit
+    </div>
+  </div>
+  <div class="">
+    <div class="selectID">
+      <form class="example-form">
+        <mat-form-field class="d-flex justify-content-center mx-3">
+          <mat-label>Change Name</mat-label>
+          <input placeholder="Name" name="Name" matInput type="text" [(ngModel)]="eName">
+        </mat-form-field>
+        <mat-form-field class="d-flex justify-content-center mx-3">
+          <mat-label>Change Designation</mat-label>
+          <input placeholder="Designation" name="Designation" matInput type="text" [(ngModel)]="eDesignation">
+        </mat-form-field>
+        <mat-form-field class="d-flex justify-content-center mx-3">
+          <mat-label>Change City</mat-label>
+          <input placeholder="City" matInput type="text" name="City" [(ngModel)]="eCity">
+        </mat-form-field>
+      </form>
+    </div>
+    <div mat-dialog-actions class="d-flex justify-content-center mx-3">
+      <button mat-raised-button mat-dialog-close>Cancel</button>
+      <button mat-flat-button mat-dialog-close cdkFocusInitial (click)="onSubmit()">Confirm</button>
+    </div>
+  </div>
+  
