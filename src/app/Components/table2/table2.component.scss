@@ -28,9 +28,15 @@ input, .selectID {
     display: flex;
     justify-content: center !important;
 }
-tr :hover {
-    background-color:rgba(240, 240, 240, 0.945);
+tr, th {
+    justify-self: center !important;
 }
+button {
+    margin-right: 5px;
+}
+// tr :hover {
+//     background-color:rgba(182, 140, 140, 0.945);
+// }
 app-button {
     margin: 2px;
 }

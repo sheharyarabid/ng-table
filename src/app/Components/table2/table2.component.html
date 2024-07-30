@@ -6,14 +6,14 @@
     <title>Document</title>
 </head>
 <body>
-    <div class="row vh-70 container">
+    <div class="row container">
         <!-- Header -->
         <!-- Button -->
         <div class="d-flex row">
            
             <app-button
                 customClass="AddDataBtn"
-                label="+"
+                label="+ Add"
                 (click)="addDataDialog('500ms', '500ms')"
             >
             </app-button>
@@ -22,7 +22,8 @@
                 <input matInput (keyup)="applyFilter($event)" placeholder="Ex. John Doe">
             </mat-form-field>
             <div class="tableSeciton">
-                <table mat-table [dataSource]="dataSource" matSort class="mat-elevation-z8 table">
+                <table mat-table [dataSource]="dataSource" class="mat-elevation-z8" matSort #empTbSort="matSort"
+                >
     
                     <!-- id Column -->
                     <ng-container matColumnDef="id">
@@ -52,18 +53,8 @@
                     <ng-container matColumnDef="buttons" class="row-btns">
                         <th mat-header-cell *matHeaderCellDef> Actions </th>
                         <td mat-cell *matCellDef="let element">
-                            <!-- <app-button
-                                customClass="EditDataBtn m-2"
-                                label="Edit"
-                                (click)="updateDataDialog(element.index)"
-                            >
-                            </app-button>
-                            <app-button
-                                customClass="DeleteDataBtn m-2"
-                                label="Del"
-                                (click)="deleteDataDialog(element.index)"
-                            >
-                            </app-button> -->
+                            <button  mat-flat-button class="mx-2" (click)="openUpdateDialog(element)">Update<mat-icon>update</mat-icon></button>
+                            <button  mat-flat-button class="mx-2" (click)="deleteDataDialog(element.id)">Delete<mat-icon>delete</mat-icon></button>
                         </td>
                     </ng-container>
                   

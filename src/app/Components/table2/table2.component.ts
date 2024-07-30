@@ -10,10 +10,12 @@ import { MatInputModule } from '@angular/material/input';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { FormControl } from '@angular/forms';
 import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
-import { MatSort, MatSortModule } from '@angular/material/sort';
+import { MatSort, MatSortModule, Sort } from '@angular/material/sort';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
+import { MatIcon, MatIconModule } from '@angular/material/icon';
+
 
 export interface Employee {
   id: number;
@@ -35,7 +37,9 @@ export interface Employee {
     MatPaginatorModule,
     MatSortModule,
     ButtonComponent,
-    ReactiveFormsModule
+    ReactiveFormsModule,
+    MatIconModule,
+    MatButtonModule
   ],
   templateUrl: './table2.component.html',
   styleUrls: ['./table2.component.scss'],
@@ -52,7 +56,7 @@ export class Table2Component implements AfterViewInit {
   constructor(private cdr: ChangeDetectorRef, private http: HttpClient, public dialog: MatDialog) {
     this.loadEmployees();
   }
-
+  //Read Dat
   loadEmployees() {
     this.http.get<{ data: { id: number, attributes: { Name: string, Designation: string, City: string } }[] }>(this.apiUrl)
       .pipe(
@@ -97,28 +101,36 @@ export class Table2Component implements AfterViewInit {
       this.loadEmployees();
     });
   }
+
+  deleteDataDialog(id: number): void {
+    const dialogRef = this.dialog.open(DeleteDataDialog, {
+      width: '250px',
+      data: { id }  // Make sure 'id' is the actual employee ID, not an index
+    });
+  
+    dialogRef.componentInstance.dataDeleted.subscribe(() => {
+      this.loadEmployees();
+    });
+  }
+
+  openUpdateDialog(employee: Employee): void {
+    const dialogRef = this.dialog.open(UpdateDataDialog, {
+      width: '400px',
+      data: { 
+        id: employee.id, 
+        name: employee.name, 
+        designation: employee.designation, 
+        city: employee.city 
+      }
+    });
+  
+    dialogRef.componentInstance.dataUpdated.subscribe(() => {
+      this.loadEmployees();
+    });
+  }
+  
+  
 }
-
-  // deleteDataDialog(index: number): void {
-  //   const dialogRef = this.dialog.open(DeleteDataDialog, {
-  //     width: '250px',
-  //     data: { index }
-  //   });
-
-  //   dialogRef.componentInstance.dataDeleted.subscribe(() => {
-  //     this.loadEmployees();
-  //   });
-  // }
-
-  // updateDataDialog(index: number): void {
-  //     const dialogRef = this.dialog.open(updateDataDialog, {
-  //       width: '250px',
-  //       data: { index }
-  //     });
-  //     dialogRef.componentInstance.dataUpdated.subscribe(() => {
-  //       this.loadEmployees();
-  //     });
-  //   }
 
 
 // Create new entry
@@ -183,105 +195,122 @@ export class AddDataDialog {
 }
 
 
-// // Delete
-// @Component({
-//   selector: 'dialog-animations-example-dialog2',
-//   templateUrl: 'deleteDataDialog.html',
-//   styleUrls: ['./table2.component.scss'],
-//   standalone: true,
-//   imports: [
-//     MatButtonModule,
-//     MatAutocompleteModule,
-//     ReactiveFormsModule,
-//     MatDialogActions,
-//     MatDialogClose,
-//     MatDialogTitle,
-//     MatDialogContent,
-//     CommonModule,
-//     FormsModule,
-//     MatLabel,
-//     MatInputModule,
-//     MatFormFieldModule,
-//     Table2Component
-//   ],
-//   changeDetection: ChangeDetectionStrategy.OnPush,
-// })
-// export class DeleteDataDialog {
-//   @Output() dataDeleted = new EventEmitter<void>();
-//   readonly dialogRef = inject(MatDialogRef<DeleteDataDialog>);
-//   id: number;
+// // Delete entry
+@Component({
+  selector: 'dialog-animations-example-dialog2',
+  templateUrl: 'deleteDataDialog.html',
+  styleUrls: ['./table2.component.scss'],
+  standalone: true,
+  imports: [
+    MatButtonModule,
+    ReactiveFormsModule,
+    MatDialogActions,
+    MatDialogClose,
+    MatDialogTitle,
+    MatDialogContent,
+    CommonModule,
+    FormsModule,
+    MatInputModule,
+    MatFormFieldModule,
+    MatIconModule
+  ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class DeleteDataDialog {
+  @Output() dataDeleted = new EventEmitter<void>();
+  readonly dialogRef = inject(MatDialogRef<DeleteDataDialog>);
+  apiUrl = 'http://localhost:1337/api/employees/';
 
-//   constructor(@Inject(MAT_DIALOG_DATA) public data: { index: number }, private http: HttpClient) {
-//     this.id = data.index;
-//   }
+  constructor(
+    @Inject(MAT_DIALOG_DATA) public data: { id: number }, 
+    private http: HttpClient
+  ) {}
 
-//   onSubmit() {
-//     this.http.delete(`${this.apiUrl}${this.id}`)
-//       .pipe(
-//         catchError(error => {
-//           console.error('Error deleting employee:', error);
-//           return [];
-//         })
-//       )
-//       .subscribe(() => {
-//         this.dataDeleted.emit();
-//         this.dialogRef.close();
-//       });
-//   }
-// }
+  onDelete() {
+    if (this.data.id === undefined || this.data.id === null) {
+      console.error('Invalid employee ID:', this.data.id);
+      return;
+    }
 
-// // Update
-// @Component({
-//   selector: 'dialog-animations-example-dialog3',
-//   templateUrl: 'updateDataDialog.html',
-//   styleUrls: ['./table2.component.scss'],
-//   standalone: true,
-//   imports: [
-//     MatButtonModule,
-//     MatAutocompleteModule,
-//     ReactiveFormsModule,
-//     MatDialogActions,
-//     MatDialogClose,
-//     MatDialogTitle,
-//     MatDialogContent,
-//     CommonModule,
-//     FormsModule,
-//     MatLabel,
-//     MatInputModule,
-//     MatFormFieldModule,
-//     Table2Component
-//   ],
-//   changeDetection: ChangeDetectionStrategy.OnPush,
-// })
-// export class updateDataDialog {
-//   readonly dialogRef = inject(MatDialogRef<updateDataDialog>);
-//   @Input() eName: string;
-//   @Input() eDesignation: string;
-//   @Input() eCity: string;
-//   @Input() eId: number;
-//   @Output() dataUpdated = new EventEmitter<void>();
+    this.http.delete(`${this.apiUrl}${this.data.id}`)
+      .pipe(
+        catchError(error => {
+          console.error('Error deleting employee:', error);
+          return [];
+        })
+      )
+      .subscribe(() => {
+        this.dataDeleted.emit();
+        this.dialogRef.close();
+      });
+  }
+}
 
-//   constructor(@Inject(MAT_DIALOG_DATA) public data: { index: number }, private http: HttpClient) {
-//     this.eId = data.index;
-//   }
 
-//   onSubmit() {
-//     const updatedEmployee = {
-//       Name: this.eName,
-//       Designation: this.eDesignation,
-//       City: this.eCity
-//     };
 
-//     this.http.put(`${this.apiUrl}${this.eId}`, { data: updatedEmployee })
-//       .pipe(
-//         catchError(error => {
-//           console.error('Error updating employee:', error);
-//           return [];
-//         })
-//       )
-//       .subscribe(() => {
-//         this.dataUpdated.emit();
-//         this.dialogRef.close();
-//       });
-//   }
-// }
+// Update
+@Component({
+  selector: 'dialog-animations-example-dialog3',
+  templateUrl: 'updateDataDialog.html',
+  styleUrls: ['./table2.component.scss'],
+  standalone: true,
+  imports: [
+    MatButtonModule,
+    ReactiveFormsModule,
+    MatDialogActions,
+    MatDialogClose,
+    MatDialogTitle,
+    MatDialogContent,
+    CommonModule,
+    MatInputModule,
+    MatFormFieldModule,
+    MatIconModule
+  ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+
+export class UpdateDataDialog {
+  @Output() dataUpdated = new EventEmitter<void>();
+  readonly dialogRef = inject(MatDialogRef<UpdateDataDialog>);
+  apiUrl = 'http://localhost:1337/api/employees/';
+  updateForm: FormGroup;
+
+  constructor(
+    @Inject(MAT_DIALOG_DATA) public data: { id: number, name: string, designation: string, city: string }, 
+    private http: HttpClient,
+    private fb: FormBuilder
+  ) {
+    this.updateForm = this.fb.group({
+      name: [data.name, Validators.required],
+      designation: [data.designation, Validators.required],
+      city: [data.city, Validators.required]
+    });
+  }
+
+  onSubmit() {
+    if (this.updateForm.invalid) {
+      return;
+    }
+
+    const updatedEmployee = {
+      data: {
+        Name: this.updateForm.value.name,
+        Designation: this.updateForm.value.designation,
+        City: this.updateForm.value.city
+      }
+    };
+
+    this.http.put(`${this.apiUrl}${this.data.id}`, updatedEmployee)
+      .pipe(
+        catchError(error => {
+          console.error('Error updating employee:', error);
+          return [];
+        })
+      )
+      .subscribe(() => {
+        this.dataUpdated.emit();
+        this.dialogRef.close();
+      });
+  }
+}
+
