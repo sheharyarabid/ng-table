@@ -7,15 +7,12 @@ import { MAT_DIALOG_DATA, MatDialog, MatDialogActions, MatDialogClose, MatDialog
 import { MatButtonModule } from '@angular/material/button';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatInputModule } from '@angular/material/input';
-import { MatAutocompleteModule } from '@angular/material/autocomplete';
-import { FormControl } from '@angular/forms';
 import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 import { MatSort, MatSortModule, Sort } from '@angular/material/sort';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
-import { MatIcon, MatIconModule } from '@angular/material/icon';
-
+import { MatIconModule } from '@angular/material/icon';
+import { PageEvent } from '@angular/material/paginator';
 
 export interface Employee {
   id: number;
@@ -48,24 +45,46 @@ export interface Employee {
 export class Table2Component implements AfterViewInit {
   displayedColumns: string[] = ['id', 'name', 'designation', 'city', 'buttons'];
   dataSource: MatTableDataSource<Employee> = new MatTableDataSource<Employee>([]);
-  apiUrl = 'http://localhost:1337/api/employees/';
+  totalEmployees = 0; // Total number of employees
+  pageSize = 5; // Default page size
+  pageIndex = 0; // Default page index
+  sortField = 'id'; // Default sort field
+  sortDirection = 'asc'; // Default sort direction
+  apiUrl = 'http://localhost:1337/api/employees/'; // API URL
 
   @ViewChild(MatPaginator) paginator: MatPaginator;
   @ViewChild(MatSort) sort: MatSort;
 
-  constructor(private cdr: ChangeDetectorRef, private http: HttpClient, public dialog: MatDialog) {
-    this.loadEmployees();
-  }
-  //Read Dat
-  loadEmployees() {
-    this.http.get<{ data: { id: number, attributes: { Name: string, Designation: string, City: string } }[] }>(this.apiUrl)
+  constructor(private cdr: ChangeDetectorRef, private http: HttpClient, public dialog: MatDialog) {}
+
+  loadEmployees(
+    pageIndex: number = 0,
+    pageSize: number = 5,
+    sortField: string = 'id',
+    sortDirection: string = 'asc'
+  ) {
+    const validSortDirection = sortDirection.toLowerCase() === 'asc' || sortDirection.toLowerCase() === 'desc'
+      ? sortDirection.toLowerCase()
+      : 'asc';
+  
+    // Convert 0-based index from MatPaginator to 1-based index for the API
+    const params = {
+      'pagination[page]': (pageIndex + 1).toString(), // 1-based index for the API
+      'pagination[pageSize]': pageSize.toString(),
+      'sort': `${sortField}:${validSortDirection}`
+    };
+  
+    this.http.get<{ data: { id: number, attributes: { name: string, designation: string, city: string } }[], meta: { pagination: { total: number } } }>(this.apiUrl, { params })
       .pipe(
-        map(response => response.data.map(emp => ({
-          id: emp.id,
-          name: emp.attributes.Name,
-          designation: emp.attributes.Designation,
-          city: emp.attributes.City
-        }))),
+        map(response => {
+          this.totalEmployees = response.meta.pagination.total; // Update total employees
+          return response.data.map(emp => ({
+            id: emp.id,
+            name: emp.attributes.name,
+            designation: emp.attributes.designation,
+            city: emp.attributes.city
+          }));
+        }),
         catchError(error => {
           console.error('Error loading employees:', error);
           return [];
@@ -76,11 +95,27 @@ export class Table2Component implements AfterViewInit {
         this.cdr.markForCheck();
       });
   }
-
+  
   ngAfterViewInit() {
-    this.dataSource.paginator = this.paginator;
-    this.dataSource.sort = this.sort;
+    // Initially load the employees
+    this.loadEmployees(this.pageIndex, this.pageSize, this.sortField, this.sortDirection);
+  
+    this.paginator.page.subscribe((event: PageEvent) => {
+      // Update the pageIndex and pageSize
+      this.pageIndex = event.pageIndex;
+      this.pageSize = event.pageSize;
+      this.loadEmployees(this.pageIndex, this.pageSize, this.sort.active, this.sort.direction);
+    });
+  
+    this.sort.sortChange.subscribe((sort: Sort) => {
+      // Update the sortField and sortDirection
+      this.sortField = sort.active;
+      this.sortDirection = sort.direction;
+      this.pageIndex = 0; // Reset to the first page when sorting changes
+      this.loadEmployees(this.pageIndex, this.pageSize, this.sortField, this.sortDirection);      
+    });
   }
+  
 
   applyFilter(event: Event) {
     const filterValue = (event.target as HTMLInputElement).value;
@@ -98,39 +133,38 @@ export class Table2Component implements AfterViewInit {
       exitAnimationDuration,
     });
     dialogRef.componentInstance.dataAdded.subscribe(() => {
-      this.loadEmployees();
+      this.loadEmployees(this.pageIndex, this.pageSize, this.sortField, this.sortDirection);
     });
   }
 
   deleteDataDialog(id: number): void {
     const dialogRef = this.dialog.open(DeleteDataDialog, {
       width: '250px',
-      data: { id }  // Make sure 'id' is the actual employee ID, not an index
+      data: { id }
     });
-  
+
     dialogRef.componentInstance.dataDeleted.subscribe(() => {
-      this.loadEmployees();
+      this.loadEmployees(this.pageIndex, this.pageSize, this.sortField, this.sortDirection);
     });
   }
 
   openUpdateDialog(employee: Employee): void {
     const dialogRef = this.dialog.open(UpdateDataDialog, {
       width: '400px',
-      data: { 
-        id: employee.id, 
-        name: employee.name, 
-        designation: employee.designation, 
-        city: employee.city 
+      data: {
+        id: employee.id,
+        name: employee.name,
+        designation: employee.designation,
+        city: employee.city
       }
     });
-  
+
     dialogRef.componentInstance.dataUpdated.subscribe(() => {
-      this.loadEmployees();
+      this.loadEmployees(this.pageIndex, this.pageSize, this.sortField, this.sortDirection);
     });
   }
-  
-  
 }
+
 
 
 // Create new entry
@@ -157,7 +191,7 @@ export class Table2Component implements AfterViewInit {
 export class AddDataDialog {
   readonly dialogRef = inject(MatDialogRef<AddDataDialog>);
   @Output() dataAdded = new EventEmitter<void>();
-  
+
   form: FormGroup;
   apiUrl = 'http://localhost:1337/api/employees/';
 
@@ -175,9 +209,9 @@ export class AddDataDialog {
     }
 
     const newEmployee = {
-      Name: this.form.value.name,
-      Designation: this.form.value.designation,
-      City: this.form.value.city
+      name: this.form.value.name,
+      designation: this.form.value.designation,
+      city: this.form.value.city
     };
 
     this.http.post(this.apiUrl, { data: newEmployee })
@@ -222,9 +256,9 @@ export class DeleteDataDialog {
   apiUrl = 'http://localhost:1337/api/employees/';
 
   constructor(
-    @Inject(MAT_DIALOG_DATA) public data: { id: number }, 
+    @Inject(MAT_DIALOG_DATA) public data: { id: number },
     private http: HttpClient
-  ) {}
+  ) { }
 
   onDelete() {
     if (this.data.id === undefined || this.data.id === null) {
@@ -276,7 +310,7 @@ export class UpdateDataDialog {
   updateForm: FormGroup;
 
   constructor(
-    @Inject(MAT_DIALOG_DATA) public data: { id: number, name: string, designation: string, city: string }, 
+    @Inject(MAT_DIALOG_DATA) public data: { id: number, name: string, designation: string, city: string },
     private http: HttpClient,
     private fb: FormBuilder
   ) {
@@ -294,9 +328,9 @@ export class UpdateDataDialog {
 
     const updatedEmployee = {
       data: {
-        Name: this.updateForm.value.name,
-        Designation: this.updateForm.value.designation,
-        City: this.updateForm.value.city
+        name: this.updateForm.value.name,
+        designation: this.updateForm.value.designation,
+        city: this.updateForm.value.city
       }
     };
 

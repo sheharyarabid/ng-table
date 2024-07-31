@@ -68,7 +68,8 @@
                 </table>
     
                 <!-- Pagination -->
-                <mat-paginator [pageSizeOptions]="[5, 10, 25, 100]" aria-label="Select page of employees"></mat-paginator>
+                <mat-paginator [pageSizeOptions]="[5, 10, 25, 100]" [length]="totalEmployees" aria-label="Select page of employees"></mat-paginator>
+
             </div>
         </div>
 
