@@ -82,7 +82,7 @@ export class Table2Component implements AfterViewInit {
       this.loadEmployees(this.pageIndex, this.pageSize, this.sortField, this.sortDirection, this.filterValue);
     });
 
-    // Filter input observable
+    // Filter Input observable
     fromEvent(this.filterInput.nativeElement, 'input').pipe(
       debounce(() => interval(1500)), // Adjust debounce time as needed
       map((event: any) => event.target.value.trim().toLowerCase()),
