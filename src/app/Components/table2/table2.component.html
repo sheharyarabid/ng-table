@@ -19,9 +19,10 @@
             </app-button>
             <mat-form-field style="margin: 10px 0; min-width: 100%;">
                 <mat-label>Filter</mat-label>
-                <input matInput (keyup)="applyFilter($event)" placeholder="Ex. John Doe">
+                <input matInput #filterInput placeholder="Filter">
             </mat-form-field>
             <div class="tableSeciton">
+
                 <table mat-table [dataSource]="dataSource" class="mat-elevation-z8" matSort #empTbSort="matSort"
                 >
     
