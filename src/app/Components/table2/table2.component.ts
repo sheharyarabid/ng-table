@@ -13,6 +13,8 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { catchError, map } from 'rxjs/operators';
 import { MatIconModule } from '@angular/material/icon';
 import { PageEvent } from '@angular/material/paginator';
+import { fromEvent, interval } from 'rxjs';
+import { debounce, scan } from 'rxjs/operators';
 
 // Define the structure of an Employee object
 export interface Employee {
@@ -55,10 +57,41 @@ export class Table2Component implements AfterViewInit {
 
   @ViewChild(MatPaginator) paginator: MatPaginator; // Reference to MatPaginator for pagination
   @ViewChild(MatSort) sort: MatSort; // Reference to MatSort for sorting
+  @ViewChild('filterInput') filterInput: any; // Reference to filter input field
 
   filterValue = ''; // Store filter value
 
   constructor(private cdr: ChangeDetectorRef, private http: HttpClient, public dialog: MatDialog) {}
+
+  ngAfterViewInit() {
+    // Load employees initially
+    this.loadEmployees(this.pageIndex, this.pageSize, this.sortField, this.sortDirection, this.filterValue);
+
+    // Listen to page changes in the paginator
+    this.paginator.page.subscribe((event: PageEvent) => {
+      this.pageIndex = event.pageIndex;
+      this.pageSize = event.pageSize;
+      this.loadEmployees(this.pageIndex, this.pageSize, this.sort.active, this.sort.direction, this.filterValue);
+    });
+
+    // Listen to sort changes
+    this.sort.sortChange.subscribe((sort: Sort) => {
+      this.sortField = sort.active;
+      this.sortDirection = sort.direction;
+      this.pageIndex = this.paginator.pageIndex;
+      this.loadEmployees(this.pageIndex, this.pageSize, this.sortField, this.sortDirection, this.filterValue);
+    });
+
+    // Filter input observable
+    fromEvent(this.filterInput.nativeElement, 'input').pipe(
+      debounce(() => interval(1500)), // Adjust debounce time as needed
+      map((event: any) => event.target.value.trim().toLowerCase()),
+      scan((acc, curr) => curr) // Get the latest filter value
+    ).subscribe(value => {
+      this.filterValue = value;
+      this.loadEmployees(this.pageIndex, this.pageSize, this.sortField, this.sortDirection, this.filterValue);
+    });
+  }
 
   // Load employees with pagination, sorting, and filtering
   loadEmployees(
@@ -68,33 +101,25 @@ export class Table2Component implements AfterViewInit {
     sortDirection: string = 'asc',
     filterValue: string = ''
   ) {
-    // Validate and normalize sort direction
     const validSortDirection = ['asc', 'desc'].includes(sortDirection.toLowerCase()) ? sortDirection.toLowerCase() : 'asc';
-    
-    // Normalize and encode filter value
     const normalizedFilterValue = filterValue.trim().toLowerCase();
-    console.log(pageIndex);
-    // Initialize HTTP parameters
     let params = new HttpParams()
       .set('pagination[page]', (pageIndex + 1).toString())
       .set('pagination[pageSize]', pageSize.toString())
-      .set('pagination[withCount]', 'true') // Include total count in response
+      .set('pagination[withCount]', 'true')
       .set('sort', `${sortField}:${validSortDirection}`);
-  
-    // Add filter parameters if filterValue is provided
+
     if (normalizedFilterValue) {
       params = params
         .set('filters[$or][0][name][$containsi]', normalizedFilterValue)
         .set('filters[$or][1][designation][$containsi]', normalizedFilterValue)
         .set('filters[$or][2][city][$containsi]', normalizedFilterValue);
     }
-  
 
-  
     this.http.get<{ data: { id: number, attributes: { name: string, designation: string, city: string } }[], meta: { pagination: { total: number } } }>(this.apiUrl, { params })
       .pipe(
         map(response => {
-         this.totalEmployees = response.meta.pagination.total;
+          this.totalEmployees = response.meta.pagination.total;
           return response.data.map(emp => ({
             id: emp.id,
             name: emp.attributes.name,
@@ -112,34 +137,8 @@ export class Table2Component implements AfterViewInit {
         this.cdr.markForCheck();
       });
   }
-  
-  ngAfterViewInit() {
-    // Initially load the employees
-    this.loadEmployees(this.pageIndex, this.pageSize, this.sortField, this.sortDirection, this.filterValue);
-  
-    // Listen to page changes in the paginator
-    this.paginator.page.subscribe((event: PageEvent) => {
-      // Update the pageIndex and pageSize
-      this.pageIndex = event.pageIndex;
-      this.pageSize = event.pageSize;
-      this.loadEmployees(this.pageIndex, this.pageSize, this.sort.active, this.sort.direction, this.filterValue);
-    });
-  
-    // Listen to sort changes
-    this.sort.sortChange.subscribe((sort: Sort) => {
-      // Update the sortField and sortDirection
-      this.sortField = sort.active;
-      this.sortDirection = sort.direction;
-      this.pageIndex = this.paginator.pageIndex; //handles the current page data as per sorting
-      this.loadEmployees(this.pageIndex, this.pageSize, this.sortField, this.sortDirection, this.filterValue);      
-    });
-  }
-  
+
   // Apply filter when input changes
-  applyFilter(event: Event) {
-    this.filterValue = (event.target as HTMLInputElement).value.trim().toLowerCase();
-    this.loadEmployees(this.pageIndex, this.pageSize, this.sortField, this.sortDirection, this.filterValue);
-  }
 
   // Open a dialog to add a new employee
   addDataDialog(enterAnimationDuration: string, exitAnimationDuration: string): void {
